@@ -3,6 +3,7 @@ package datadog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -15,10 +16,8 @@ const (
 	priorityHeaderKey = "x-datadog-sampling-priority"
 	// TODO: other headers: https://github.com/DataDog/dd-trace-go/blob/4f0b6ac22e14082ee1443d502a35a99cd9459ee0/ddtrace/tracer/textmap.go#L73-L96
 
-	isSampled  = "1"
 	notSampled = "0"
-
-	traceIDPadding = "0000000000000000"
+	isSampled  = "1"
 )
 
 var (
@@ -92,9 +91,9 @@ func extract(traceID, spanID, sampled string) (trace.SpanContext, error) {
 
 	if traceID != "" {
 		id := traceID
-		if len(traceID) == 16 {
-			// Pad 64-bit trace IDs.
-			id = traceIDPadding + traceID
+		if len(traceID) < 32 {
+			// Pad 64-bit trace IDs
+			id = fmt.Sprintf("%032s", traceID)
 		}
 		if scc.TraceID, err = trace.TraceIDFromHex(id); err != nil {
 			return empty, errInvalidTraceIDHeader
@@ -106,7 +105,12 @@ func extract(traceID, spanID, sampled string) (trace.SpanContext, error) {
 	}
 
 	if spanID != "" {
-		if scc.SpanID, err = trace.SpanIDFromHex(spanID); err != nil {
+		id := spanID
+		if len(spanID) < 16 {
+			// Pad 64-bit span IDs
+			id = fmt.Sprintf("%016s", spanID)
+		}
+		if scc.SpanID, err = trace.SpanIDFromHex(id); err != nil {
 			return empty, errInvalidSpanIDHeader
 		}
 	}
