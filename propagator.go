@@ -71,7 +71,7 @@ func (dd Propagator) Extract(ctx context.Context, carrier propagation.TextMapCar
 		spanID  = carrier.Get(parentIDHeaderKey)
 		sampled = carrier.Get(priorityHeaderKey)
 	)
-	ctx, sc, err := extract(ctx, traceID, spanID, sampled)
+	sc, err := extract(traceID, spanID, sampled)
 	if err != nil || !sc.IsValid() {
 		return ctx
 	}
@@ -79,7 +79,7 @@ func (dd Propagator) Extract(ctx context.Context, carrier propagation.TextMapCar
 	return trace.ContextWithRemoteSpanContext(ctx, sc)
 }
 
-func extract(ctx context.Context, traceID, spanID, sampled string) (context.Context, trace.SpanContext, error) {
+func extract(traceID, spanID, sampled string) (trace.SpanContext, error) {
 	var (
 		scc = trace.SpanContextConfig{}
 		err error
@@ -87,7 +87,7 @@ func extract(ctx context.Context, traceID, spanID, sampled string) (context.Cont
 	)
 
 	if traceID, ok = convertDDtoOT(traceID); !ok {
-		return ctx, empty, errMalformedTraceID
+		return empty, errMalformedTraceID
 	}
 
 	if traceID != "" {
@@ -97,17 +97,17 @@ func extract(ctx context.Context, traceID, spanID, sampled string) (context.Cont
 			id = traceIDPadding + traceID
 		}
 		if scc.TraceID, err = trace.TraceIDFromHex(id); err != nil {
-			return ctx, empty, errInvalidTraceIDHeader
+			return empty, errInvalidTraceIDHeader
 		}
 	}
 
 	if spanID, ok = convertDDtoOT(spanID); !ok {
-		return ctx, empty, errMalformedSpanID
+		return empty, errMalformedSpanID
 	}
 
 	if spanID != "" {
 		if scc.SpanID, err = trace.SpanIDFromHex(spanID); err != nil {
-			return ctx, empty, errInvalidSpanIDHeader
+			return empty, errInvalidSpanIDHeader
 		}
 	}
 
@@ -115,7 +115,7 @@ func extract(ctx context.Context, traceID, spanID, sampled string) (context.Cont
 		scc.TraceFlags = trace.FlagsSampled
 	}
 
-	return ctx, trace.NewSpanContext(scc), nil
+	return trace.NewSpanContext(scc), nil
 }
 
 // Fields returns list of fields set with Inject.
