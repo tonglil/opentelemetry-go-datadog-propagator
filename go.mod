@@ -1,11 +1,11 @@
 module github.com/tonglil/opentelemetry-go-datadog-propagator
 
-go 1.19
+go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/otel v1.21.0
-	go.opentelemetry.io/otel/trace v1.21.0
+	go.opentelemetry.io/otel v1.24.0
+	go.opentelemetry.io/otel/trace v1.24.0
 )
 
 require (
