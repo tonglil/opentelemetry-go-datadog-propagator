@@ -53,11 +53,8 @@ func TestExtractMultiple(t *testing.T) {
 		},
 		{
 			ddTraceIDSmall, ddParentIDSmall, "",
-			trace.SpanContextConfig{
-				TraceID: traceIDSmall,
-				SpanID:  spanIDSmall,
-			},
-			nil,
+			trace.SpanContextConfig{},
+			errInvalidSamplingPriorityHeader,
 		},
 		{
 			"", ddParentID, "",
@@ -78,6 +75,28 @@ func TestExtractMultiple(t *testing.T) {
 			ddTraceID, "0000000000000000000", "",
 			trace.SpanContextConfig{},
 			errInvalidSpanIDHeader,
+		},
+		{
+			ddTraceID, ddParentID, "foo",
+			trace.SpanContextConfig{},
+			errInvalidSamplingPriorityHeader,
+		},
+		{
+			ddTraceID, ddParentID, "2",
+			trace.SpanContextConfig{
+				TraceID:    traceID,
+				SpanID:     spanID,
+				TraceFlags: trace.FlagsSampled,
+			},
+			nil,
+		},
+		{
+			ddTraceID, ddParentID, "-1",
+			trace.SpanContextConfig{
+				TraceID:    traceID,
+				SpanID:     spanID,
+			},
+			nil,
 		},
 	}
 
