@@ -16,6 +16,8 @@ const (
 	priorityHeaderKey = "x-datadog-sampling-priority"
 	// TODO: other headers: https://github.com/DataDog/dd-trace-go/blob/4f0b6ac22e14082ee1443d502a35a99cd9459ee0/ddtrace/tracer/textmap.go#L73-L96
 
+	// These are typical sampling values for Datadog, but Datadog libraries actually support any integer values
+	// values >=1 mean the trace is sampled, values <= 0 mean the trace is not sampled
 	notSampled = "0"
 	isSampled  = "1"
 )
@@ -23,10 +25,11 @@ const (
 var (
 	empty = trace.SpanContext{}
 
-	errMalformedTraceID     = errors.New("cannot parse Datadog trace ID as 64bit unsigned int from header")
-	errMalformedSpanID      = errors.New("cannot parse Datadog span ID as 64bit unsigned int from header")
-	errInvalidTraceIDHeader = errors.New("invalid Datadog trace ID header found")
-	errInvalidSpanIDHeader  = errors.New("invalid Datadog span ID header found")
+	errMalformedTraceID              = errors.New("cannot parse Datadog trace ID as 64bit unsigned int from header")
+	errMalformedSpanID               = errors.New("cannot parse Datadog span ID as 64bit unsigned int from header")
+	errInvalidTraceIDHeader          = errors.New("invalid Datadog trace ID header found")
+	errInvalidSpanIDHeader           = errors.New("invalid Datadog span ID header found")
+	errInvalidSamplingPriorityHeader = errors.New("invalid Datadog sampling priority header found")
 )
 
 // Propagator serializes Span Context to/from Datadog headers.
@@ -115,7 +118,11 @@ func extract(traceID, spanID, sampled string) (trace.SpanContext, error) {
 		}
 	}
 
-	if sampled == isSampled {
+	sampledInt, err := strconv.Atoi(sampled)
+	if err != nil {
+		return empty, errInvalidSamplingPriorityHeader
+	}
+	if sampledInt >= 1 {
 		scc.TraceFlags = trace.FlagsSampled
 	}
 
